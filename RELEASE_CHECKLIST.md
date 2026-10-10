@@ -1,16 +1,17 @@
-# 0.2.1 发布准备
+# 0.2.2 发布准备
 
 仓库：[KarryYz/file_clear](https://github.com/KarryYz/file_clear)，维护者 KarryYz，许可证 MIT。
 
-先执行 `.\build.ps1` 和 `.\release.ps1`。在 GitHub 创建 `v0.2.1` 标签，选择已提交并验证的源码作为目标，Release 标题建议「拾序 0.2.1」，复制 `RELEASE_NOTES.md` 作为说明。
+先执行 `.\build.ps1` 和 `.\release.ps1`。在 GitHub 创建 `v0.2.2` 标签，选择已提交并验证的源码作为目标，Release 标题建议「拾序 0.2.2」，复制 `RELEASE_NOTES.md` 作为说明。
 
 上传 `dist` 中的以下文件：
 
-- `ShiXu-0.2.1-windows-x64.exe`
-- `ShiXu-0.2.1-source.zip`
+- `ShiXu-0.2.2-windows-x64.exe`
+- `ShiXu-0.2.2-source.zip`
 - `SHA256SUMS.txt`
 - `LICENSE`
 - `THIRD_PARTY_NOTICES.txt`
+- `RELEASE_NOTES.md`
 
 上传后确认文件的 SHA-256 与清单一致。README 的 `/releases/latest` 会指向最新正式版本。现有 `exe` 标签的 0.2.0 Release 可作为历史版本保留，新版本使用 `v主版本.次版本.修订号` 标签。
 

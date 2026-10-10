@@ -8,7 +8,7 @@
 
 打开下载页面，下载 Assets 下以 `windows-x64.exe` 结尾的文件，双击即可运行，无需安装 Python 或 Node。支持 Windows 10/11 64 位，需要 [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/)。首次启动会解压内置运行文件，可能需要几秒。GitHub 的 Source code ZIP 是源码，需要按后面的步骤构建。
 
-源码当前版本为 **0.2.1**，下载版本以 Release 附件名称为准。发布时同时附上 `SHA256SUMS.txt`、`LICENSE` 和 `THIRD_PARTY_NOTICES.txt`；可用 `Get-FileHash -Algorithm SHA256 下载的文件路径` 核对校验值。
+源码当前版本为 **0.2.2**，下载版本以 Release 附件名称为准。发布时同时附上 `SHA256SUMS.txt`、`LICENSE` 和 `THIRD_PARTY_NOTICES.txt`；可用 `Get-FileHash -Algorithm SHA256 下载的文件路径` 核对校验值。
 
 桌面版历史和草稿保存在 `%LOCALAPPDATA%\ShiXu\tasks.sqlite3`，日志保存在同目录的 `desktop.log`。关闭窗口时，如有任务正在运行，会请求安全停止，完成当前文件后退出。桌面版与源码开发版默认使用不同的数据目录；如需迁移历史，请关闭两边的程序、先备份数据库，再将开发版 `backend/data/tasks.sqlite3` 复制到桌面版数据目录。请勿覆盖已有记录而不备份。
 
@@ -129,12 +129,12 @@ cd ..
 .\build.ps1
 ```
 
-产物在 `dist/ShiXu-0.2.1-windows-x64.exe`，名称从后端版本生成；构建脚本检查前后端版本一致，运行测试后打包。`ShiXu.spec` 包含程序代码、依赖、许可证说明和构建后的 Vue 界面，不包含数据库、测试文件、日志或本地缓存。发布前应核对 SHA-256，并在干净 Windows 环境验证目录选择、整理、停止、重试和撤销。
+产物在 `dist/ShiXu-0.2.2-windows-x64.exe`，名称从后端版本生成；构建脚本检查前后端版本一致，运行测试后打包。`ShiXu.spec` 包含程序代码、依赖、许可证说明和构建后的 Vue 界面，不包含数据库、测试文件、日志或本地缓存。发布前应核对 SHA-256，并在干净 Windows 环境验证目录选择、整理、停止、重试和撤销。
 
 开发时可用 `.\.venv\Scripts\python.exe desktop.py` 启动桌面壳。`FILE_ORGANIZER_DATA_DIR` 可用于隔离测试数据目录；普通用户无需配置环境变量。
 
 同一数据目录的桌面版同时只允许一个实例，避免重复启动后互相干扰整理记录。执行 `.\release.ps1` 可生成源码 ZIP、许可证附件、发布说明和 `dist/SHA256SUMS.txt`；脚本只在本机准备文件，不上传。源码包使用明确的文件清单，排除用户数据、依赖目录和测试工作目录。
 
-每次推送或提交 Pull Request 时，GitHub Actions 会在 Windows 上运行测试、构建 EXE 并保存产物。推送与代码版本一致的 `v*` 标签时，发布工作流会创建带附件的 Release 草稿，需要在 GitHub 检查后点击发布。Actions 产物用于验证；`RELEASE_NOTES.md` 可作为 0.2.1 的版本说明，发布步骤见 `RELEASE_CHECKLIST.md`。
+每次推送或提交 Pull Request 时，GitHub Actions 会在 Windows 上运行测试、构建 EXE 并保存产物。推送与代码版本一致的 `v*` 标签时，发布工作流会创建带附件的 Release 草稿，需要在 GitHub 检查后点击发布。Actions 产物用于验证；`RELEASE_NOTES.md` 可作为 0.2.2 的版本说明，发布步骤见 `RELEASE_CHECKLIST.md`。
 
 项目代码采用 MIT 许可证。第三方依赖使用各自许可证，构建时从锁定的 Python 和 npm 环境收集说明到 `THIRD_PARTY_NOTICES.txt`。

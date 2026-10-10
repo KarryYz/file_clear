@@ -43,6 +43,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $taskVersion = .\.venv\Scripts\python.exe -c 'from backend.runtime import VERSION; print(VERSION)'
-          gh release create $env:GITHUB_REF_NAME "dist/ShiXu-$taskVersion-windows-x64.exe" "dist/ShiXu-$taskVersion-source.zip" dist/SHA256SUMS.txt dist/LICENSE dist/THIRD_PARTY_NOTICES.txt --draft --title "ShiXu $taskVersion" --notes-file RELEASE_NOTES.md --verify-tag
+          gh release create $env:GITHUB_REF_NAME "dist/ShiXu-$taskVersion-windows-x64.exe" "dist/ShiXu-$taskVersion-source.zip" dist/SHA256SUMS.txt dist/LICENSE dist/THIRD_PARTY_NOTICES.txt dist/RELEASE_NOTES.md --draft --title "ShiXu $taskVersion" --notes-file RELEASE_NOTES.md --verify-tag
           if ($LASTEXITCODE -ne 0) { throw 'Release draft creation failed.' }
           gh release view $env:GITHUB_REF_NAME --json url,isDraft,tagName

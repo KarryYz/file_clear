@@ -10,7 +10,8 @@ from backend.organizer import Organizer, digest, file_error, verified_move
 class OrganizerTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
-        self.root = Path(self.temp.name)
+        # Windows TEMP may use an 8.3 alias; compare canonical paths like scan does.
+        self.root = Path(self.temp.name).resolve()
         self.source = self.root / 'source'
         self.source.mkdir()
         self.target = self.source / 'archive'
