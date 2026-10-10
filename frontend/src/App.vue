@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { version as appVersion } from '../package.json'
+import { createJobPoller } from './jobPolling'
 
 declare global {
   interface Window { pywebview?: { api: { choose_directory(initial: string, title: string): Promise<string | null> } } }
@@ -34,7 +36,8 @@ const resultsPanel = ref<HTMLElement | null>(null)
 const selection = ref<string[]>([])
 const filter = ref('全部')
 const running = computed(() => ['running', 'undoing'].includes(task.value?.status ?? ''))
-const locked = computed(() => !!busy.value || running.value)
+const tracking = ref(false)
+const locked = computed(() => !!busy.value || running.value || tracking.value)
 const failedCount = computed(() => task.value?.files.filter(f => f.status === 'failed').length ?? 0)
 const pendingCount = computed(() => task.value?.files.filter(f => f.status === 'pending').length ?? 0)
 const progressPercent = computed(() => {
@@ -42,8 +45,6 @@ const progressPercent = computed(() => {
   if (!p?.total) return 0
   return Math.min(100, Math.floor(100 * (p.completed + (p.current_size ? Math.min(.99, p.current_bytes / p.current_size) : 0)) / p.total))
 })
-let pollTimer: ReturnType<typeof setInterval> | undefined
-let polling = false
 const categories = computed(() => ['全部', ...new Set(task.value?.files.map(f => f.category) ?? [])])
 const visible = computed(() => task.value?.files.filter(f => filter.value === '全部' || f.category === filter.value) ?? [])
 const chosen = computed(() => task.value?.files.filter(f => selection.value.includes(f.id)) ?? [])
@@ -105,26 +106,34 @@ async function chooseDirectory(which: 'source' | 'target') {
   })
 }
 
+const jobPoller = createJobPoller(async isCurrent => {
+  const id = task.value?.id
+  if (!id) return true
+  const result = await api<{status: string; progress: Progress}>(`/tasks/${id}/progress`)
+  if (!isCurrent() || task.value?.id !== id) return true
+  task.value.status = result.status; task.value.progress = result.progress
+  if (['running', 'undoing'].includes(result.status)) {
+    error.value = ''
+    return false
+  }
+  // Keep controls locked and polling active until every final request succeeds.
+  const [finished, records, savedDrafts] = await Promise.all([
+    api<Task>(`/tasks/${id}`), api<Task[]>('/tasks'), api<Task[]>('/drafts'),
+  ])
+  if (!isCurrent() || task.value?.id !== id) return true
+  load(finished); history.value = records; drafts.value = savedDrafts
+  error.value = ''
+  if (['running', 'undoing'].includes(finished.status)) return false
+  tracking.value = false
+  message.value = finished.status === 'stopped' ? '已安全停止：当前文件已处理完，未处理文件可点击继续。' :
+    finished.status === 'undone' ? '撤销完成，文件已恢复原位置。' :
+    `任务已结束。${outcome.value}${finished.status === 'undo_partial' ? '；部分文件未恢复，请查看原因。' : ''}`
+  return true
+}, e => { error.value = `结果连接中断，将自动重试：${e instanceof Error ? e.message : e}` })
+
 function trackJob() {
-  if (pollTimer) clearInterval(pollTimer)
-  pollTimer = setInterval(async () => {
-    if (polling || !task.value) return
-    polling = true
-    const id = task.value.id
-    try {
-      const result = await api<{status: string; progress: Progress}>(`/tasks/${id}/progress`)
-      if (task.value?.id !== id) return
-      task.value.status = result.status; task.value.progress = result.progress
-      if (!['running', 'undoing'].includes(result.status)) {
-        clearInterval(pollTimer); pollTimer = undefined
-        load(await api<Task>(`/tasks/${id}`)); await refresh()
-        message.value = result.status === 'stopped' ? '已安全停止：当前文件已处理完，未处理文件可点击继续。' :
-          result.status === 'undone' ? '撤销完成，文件已恢复原位置。' :
-          `任务已结束。${outcome.value}${result.status === 'undo_partial' ? '；部分文件未恢复，请查看原因。' : ''}`
-      }
-    } catch (e) { error.value = `进度连接中断，将自动重试：${e instanceof Error ? e.message : e}` }
-    finally { polling = false }
-  }, 500)
+  tracking.value = true
+  jobPoller.start()
 }
 
 function startAction(action: 'execute' | 'undo' | 'retry' | 'resume', record?: Task) {
@@ -206,7 +215,7 @@ onMounted(() => run('正在连接本机服务…', async () => {
     message.value = '已自动恢复最近保存的草稿，包括勾选文件和分类筛选。执行前仍会检查文件是否变化。'
   }
 }))
-onUnmounted(() => { if (pollTimer) clearInterval(pollTimer) })
+onUnmounted(() => { jobPoller.stop() })
 </script>
 
 <template>
@@ -218,7 +227,7 @@ onUnmounted(() => { if (pollTimer) clearInterval(pollTimer) })
       <div class="aside-note"><span class="dot"></span>本机文件处理<p>文件在你的电脑上整理。<br>先预览，再移动，可撤销。</p></div>
     </aside>
     <main>
-      <header><div><div class="eyebrow">让文件各归其位</div><h1>给文件腾出秩序</h1><p>选择一个文件夹，把散落的文档和安装包收进合适的位置。</p></div><span class="badge">本机文件整理 · v0.2.0</span></header>
+      <header><div><div class="eyebrow">让文件各归其位</div><h1>给文件腾出秩序</h1><p>选择一个文件夹，把散落的文档和安装包收进合适的位置。</p></div><span class="badge">本机文件整理 · v{{ appVersion }}</span></header>
       <section class="panel setup">
         <div class="section-title"><h2><span class="step">01</span>选择整理范围</h2><span>扫描不会移动文件</span></div>
         <form @submit.prevent="scan">

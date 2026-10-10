@@ -1,0 +1,48 @@
+name: Windows tests and build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install pinned dependencies
+        shell: pwsh
+        run: |
+          python -m venv .venv
+          .\.venv\Scripts\python.exe -m pip install -r backend\requirements-lock.txt
+          if ($LASTEXITCODE -ne 0) { throw 'pip install failed.' }
+          npm ci --prefix frontend
+          if ($LASTEXITCODE -ne 0) { throw 'npm ci failed.' }
+      - name: Test and build EXE
+        shell: pwsh
+        run: .\build.ps1
+      - name: Prepare source and checksums
+        shell: pwsh
+        run: .\release.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ShiXu-windows-x64
+          if-no-files-found: error
+          path: |
+            dist/ShiXu-*-windows-x64.exe
+            dist/ShiXu-*-source.zip
+            dist/SHA256SUMS.txt
+            dist/LICENSE
+            dist/THIRD_PARTY_NOTICES.txt
+            dist/RELEASE_NOTES.md

@@ -1,0 +1,48 @@
+name: Prepare release draft
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  draft:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Check release tag and install dependencies
+        shell: pwsh
+        run: |
+          python -m venv .venv
+          $taskVersion = .\.venv\Scripts\python.exe -c 'from backend.runtime import VERSION; print(VERSION)'
+          if ($env:GITHUB_REF_NAME -ne "v$taskVersion") { throw 'Tag and application version must match.' }
+          .\.venv\Scripts\python.exe -m pip install -r backend\requirements-lock.txt
+          if ($LASTEXITCODE -ne 0) { throw 'pip install failed.' }
+          npm ci --prefix frontend
+          if ($LASTEXITCODE -ne 0) { throw 'npm ci failed.' }
+      - name: Test, build and prepare files
+        shell: pwsh
+        run: |
+          .\build.ps1
+          .\release.ps1
+      - name: Create draft with attachments
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $taskVersion = .\.venv\Scripts\python.exe -c 'from backend.runtime import VERSION; print(VERSION)'
+          gh release create $env:GITHUB_REF_NAME "dist/ShiXu-$taskVersion-windows-x64.exe" "dist/ShiXu-$taskVersion-source.zip" dist/SHA256SUMS.txt dist/LICENSE dist/THIRD_PARTY_NOTICES.txt --draft --title "ShiXu $taskVersion" --notes-file RELEASE_NOTES.md --verify-tag
+          if ($LASTEXITCODE -ne 0) { throw 'Release draft creation failed.' }
+          gh release view $env:GITHUB_REF_NAME --json url,isDraft,tagName

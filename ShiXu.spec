@@ -1,11 +1,13 @@
 # Build from a clean venv. Only application assets are included; never user data.
 from PyInstaller.utils.hooks import collect_data_files
+from backend.runtime import VERSION
 
 a = Analysis(
     ['desktop.py'],
     pathex=[],
     binaries=[],
-    datas=[('frontend/dist', 'frontend/dist')] + collect_data_files('webview'),
+    datas=[('frontend/dist', 'frontend/dist'), ('LICENSE', '.'),
+           ('THIRD_PARTY_NOTICES.txt', '.')] + collect_data_files('webview'),
     hiddenimports=['uvicorn.logging', 'uvicorn.loops.asyncio', 'uvicorn.protocols.http.h11_impl',
                    'uvicorn.protocols.websockets.websockets_impl', 'uvicorn.lifespan.on'],
     hookspath=[],
@@ -16,5 +18,5 @@ a = Analysis(
 )
 pyz = PYZ(a.pure)
 exe = EXE(pyz, a.scripts, a.binaries, a.datas, [],
-          name='ShiXu-0.2.0-windows-x64', debug=False, bootloader_ignore_signals=False,
+          name=f'ShiXu-{VERSION}-windows-x64', debug=False, bootloader_ignore_signals=False,
           strip=False, upx=False, console=False)

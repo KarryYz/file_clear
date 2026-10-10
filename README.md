@@ -2,9 +2,13 @@
 
 本机运行的 Vue 3 + TypeScript + FastAPI 工具。选择目录 → 扫描预览 → 勾选文件 → 按类型归档 → 必要时撤销。
 
-## Windows 桌面版（0.2.0）
+[下载 Windows 桌面版](https://github.com/KarryYz/file_clear/releases/latest) · [版本记录](CHANGELOG.md) · [MIT 许可证](LICENSE)
 
-运行 `ShiXu-0.2.0-windows-x64.exe` 即可打开桌面窗口，无需安装 Python 或 Node。支持 Windows 10/11 64 位，需要 Microsoft Edge WebView2 Runtime（通常随 Edge/Windows 11 提供）。首次启动会解压内置运行文件，可能需要几秒。
+## Windows 桌面版
+
+打开下载页面，下载 Assets 下以 `windows-x64.exe` 结尾的文件，双击即可运行，无需安装 Python 或 Node。支持 Windows 10/11 64 位，需要 [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/)。首次启动会解压内置运行文件，可能需要几秒。GitHub 的 Source code ZIP 是源码，需要按后面的步骤构建。
+
+源码当前版本为 **0.2.1**，下载版本以 Release 附件名称为准。发布时同时附上 `SHA256SUMS.txt`、`LICENSE` 和 `THIRD_PARTY_NOTICES.txt`；可用 `Get-FileHash -Algorithm SHA256 下载的文件路径` 核对校验值。
 
 桌面版历史和草稿保存在 `%LOCALAPPDATA%\ShiXu\tasks.sqlite3`，日志保存在同目录的 `desktop.log`。关闭窗口时，如有任务正在运行，会请求安全停止，完成当前文件后退出。桌面版与源码开发版默认使用不同的数据目录；如需迁移历史，请关闭两边的程序、先备份数据库，再将开发版 `backend/data/tasks.sqlite3` 复制到桌面版数据目录。请勿覆盖已有记录而不备份。
 
@@ -12,13 +16,13 @@
 
 ## 快速启动（Windows / PowerShell）
 
-在解压后的项目根目录执行：
+安装 Python 3.11 和 Node.js 22 后，在项目根目录执行。Python 安装使用锁定版本约束，npm 使用已提交的锁文件：
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r backend\requirements.txt
 cd frontend
-npm install
+npm ci
 npm run build
 cd ..
 .\.venv\Scripts\python.exe -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
@@ -33,7 +37,7 @@ cd ..
 后端在根目录运行：
 
 ```powershell
-python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
+.\.venv\Scripts\python.exe -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
 另一个终端：
@@ -61,6 +65,7 @@ npm run dev
 - 同名自动加序号；执行期间新出现的冲突文件不会被覆盖。
 - 跨磁盘复制，SHA-256 校验后移除源文件；单个文件失败不影响其他文件。
 - 后台执行并实时显示处理数量、当前文件、复制/校验阶段。浏览器刷新后重新连接正在运行的任务。
+- 进度、结果详情或历史读取失败后自动重试；结果完整加载后才结束跟踪，恢复连接时清除错误提示。
 - 安全停止：完成当前文件后停止，未处理文件标为「待继续」；可以继续，也可以撤销已完成的文件。
 - 失败项一键重试：只处理失败文件，重新检查路径和原文件状态，目标重名时自动编号，不重复处理成功项。原文件内容已修改时仍拒绝移动，需要重新扫描。
 - 整理前检查目标目录创建和临时文件写入/清理权限，失败则保持预览、保留所有源文件，并给出处理建议。
@@ -81,17 +86,17 @@ npm run dev
 
 英文目录规则只用于新扫描产生的计划。旧预览及历史中的路径不自动更改，确保撤销仍按实际原路径执行。更新后请重新扫描，不要执行旧预览。原文件名或用户输入的源/目标目录仍可能包含中文，不会擅自改名。
 
-执行期间应保持服务运行，不同时编辑相关文件。历史存在 `backend/data/tasks.sqlite3`，不要删除该数据库，否则无法利用记录撤销。中断时可能同时保留源文件与复制文件；请按记录核对，工具不会擅自删除不确定的副本。撤销不删除整理时创建的空目录。
+执行期间应保持服务运行，不同时编辑相关文件。桌面版历史存在 `%LOCALAPPDATA%\ShiXu\tasks.sqlite3`，源码开发版存在 `backend/data/tasks.sqlite3`。不要删除数据库，否则无法利用记录撤销。中断时可能同时保留源文件与复制文件；请按记录核对，工具不会擅自删除不确定的副本。撤销不删除整理时创建的空目录。
 
 历史记录和主动保存的草稿均保存在这一个本机 SQLite 文件中，正常重启服务后仍保留。列表展示最近 30 条整理记录，数据库内的旧记录不会因列表限制被删除。旧版本自动保存的扫描记录会从历史列表隐藏，实际整理记录及其撤销路径保持原样。`Packages` 规则只作用于新扫描，不自动重命名现有归档目录。
 
 ## 验证
 
 ```powershell
-python -m unittest backend.test_organizer -v
-python -m pip install -r backend\requirements-dev.txt
-python -m unittest backend.test_api -v
+.\.venv\Scripts\python.exe -m pip install -r backend\requirements-dev.txt
+.\.venv\Scripts\python.exe -m unittest backend.test_organizer backend.test_api backend.test_desktop_lock -v
 cd frontend
+npm test
 npm run build
 ```
 
@@ -117,15 +122,19 @@ frontend/
 
 ```powershell
 python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r backend\requirements-desktop.txt -r backend\requirements-dev.txt
+.\.venv\Scripts\python.exe -m pip install -r backend\requirements-lock.txt
 cd frontend
 npm ci
 cd ..
 .\build.ps1
 ```
 
-产物在 `dist/ShiXu-0.2.0-windows-x64.exe`。`ShiXu.spec` 仅包含程序代码、依赖和构建后的 Vue 界面，不包含数据库、测试文件、日志或本地缓存。发布前应核对 SHA-256，并在干净 Windows 环境验证目录选择、整理、停止、重试和撤销。
+产物在 `dist/ShiXu-0.2.1-windows-x64.exe`，名称从后端版本生成；构建脚本检查前后端版本一致，运行测试后打包。`ShiXu.spec` 包含程序代码、依赖、许可证说明和构建后的 Vue 界面，不包含数据库、测试文件、日志或本地缓存。发布前应核对 SHA-256，并在干净 Windows 环境验证目录选择、整理、停止、重试和撤销。
 
 开发时可用 `.\.venv\Scripts\python.exe desktop.py` 启动桌面壳。`FILE_ORGANIZER_DATA_DIR` 可用于隔离测试数据目录；普通用户无需配置环境变量。
 
-同一数据目录的桌面版同时只允许一个实例，避免重复启动后互相干扰整理记录。执行 `.\release.ps1` 可生成源码 ZIP 和 `dist/SHA256SUMS.txt`；脚本只在本机准备文件，不上传。源码包使用明确的文件清单，排除用户数据、依赖目录和测试工作目录。
+同一数据目录的桌面版同时只允许一个实例，避免重复启动后互相干扰整理记录。执行 `.\release.ps1` 可生成源码 ZIP、许可证附件、发布说明和 `dist/SHA256SUMS.txt`；脚本只在本机准备文件，不上传。源码包使用明确的文件清单，排除用户数据、依赖目录和测试工作目录。
+
+每次推送或提交 Pull Request 时，GitHub Actions 会在 Windows 上运行测试、构建 EXE 并保存产物。推送与代码版本一致的 `v*` 标签时，发布工作流会创建带附件的 Release 草稿，需要在 GitHub 检查后点击发布。Actions 产物用于验证；`RELEASE_NOTES.md` 可作为 0.2.1 的版本说明，发布步骤见 `RELEASE_CHECKLIST.md`。
+
+项目代码采用 MIT 许可证。第三方依赖使用各自许可证，构建时从锁定的 Python 和 npm 环境收集说明到 `THIRD_PARTY_NOTICES.txt`。
